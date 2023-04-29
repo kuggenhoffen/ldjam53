@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 83e1c9b1580c94d45901abd983f0d14c
+guid: d7e08b4ec662ff5438332825c7e3c169
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -44,7 +44,7 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 2
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 10
@@ -117,13 +117,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: drone_0
+      name: pickup_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
         width: 16
-        height: 16
+        height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -131,20 +131,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: eafa0b1c5fa6db346b5eed1c992405dd
-      internalID: -630375388
+      spriteID: 2bc4e22d8971ad64888967aeb335b353
+      internalID: -1734489023
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: drone_1
+      name: pickup_1
       rect:
         serializedVersion: 2
         x: 16
         y: 0
         width: 16
-        height: 16
+        height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -152,20 +152,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 16c040735a034204f9275290e7a90ecc
-      internalID: 1307266997
+      spriteID: a3be7532a77cca04fb075748735087a2
+      internalID: -1154538788
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: drone_2
+      name: pickup_2
       rect:
         serializedVersion: 2
         x: 32
         y: 0
         width: 16
-        height: 16
+        height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -173,20 +173,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 650bb304653a3be41b1a830af9cee05e
-      internalID: 806974234
+      spriteID: 310b1feb87f4091489967298a5f1da3a
+      internalID: -929524539
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: drone_3
+      name: pickup_3
       rect:
         serializedVersion: 2
         x: 48
         y: 0
         width: 16
-        height: 16
+        height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -194,8 +194,134 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 2b8ce3f4e8a29d44382d30fd24d5548e
-      internalID: -1980927991
+      spriteID: d63d3ee4a8ee7a94792e846aa48eff3f
+      internalID: -1742831686
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pickup_4
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 0
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c6872e42996d578499b6d5dbbd0623fe
+      internalID: 1720693891
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pickup_5
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 0
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bc21b469ad4473242b4d82d22dda24f4
+      internalID: -1401530475
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pickup_6
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7967c589093d5d74d993d2e2e377b70e
+      internalID: 549694404
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pickup_7
+      rect:
+        serializedVersion: 2
+        x: 112
+        y: 0
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f16420494d98b9b4cba98920827def43
+      internalID: -382694829
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pickup_8
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 0
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 618d64112b1c8b546b68cbef6c2da55d
+      internalID: -1574494140
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: pickup_9
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dcb9ac90cdfcbf74eb943a7da282e6e5
+      internalID: 2055747049
       vertices: []
       indices: 
       edges: []
@@ -211,10 +337,16 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      drone_1: 1307266997
-      drone_2: 806974234
-      drone_3: -1980927991
-      drone_0: -630375388
+      pickup_5: -1401530475
+      pickup_7: -382694829
+      pickup_0: -1734489023
+      pickup_2: -929524539
+      pickup_9: 2055747049
+      pickup_6: 549694404
+      pickup_4: 1720693891
+      pickup_1: -1154538788
+      pickup_3: -1742831686
+      pickup_8: -1574494140
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

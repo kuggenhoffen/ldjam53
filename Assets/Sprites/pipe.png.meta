@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 83e1c9b1580c94d45901abd983f0d14c
+guid: 6326ed4477440824faa5449282b56529
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -42,13 +42,13 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 10
-  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteBorder: {x: 42, y: 0, z: 42, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -117,85 +117,64 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: drone_0
+      name: pipe_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 16
-        height: 16
+        width: 32
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: eafa0b1c5fa6db346b5eed1c992405dd
-      internalID: -630375388
+      spriteID: a6597b0cfe5dd0346b6120eb21f11cd3
+      internalID: -963775743
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: drone_1
-      rect:
-        serializedVersion: 2
-        x: 16
-        y: 0
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 16c040735a034204f9275290e7a90ecc
-      internalID: 1307266997
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: drone_2
+      name: pipe_1
       rect:
         serializedVersion: 2
         x: 32
         y: 0
-        width: 16
-        height: 16
+        width: 64
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 650bb304653a3be41b1a830af9cee05e
-      internalID: 806974234
+      spriteID: d97a61409952ffc459074c4143e014fd
+      internalID: 1985610693
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: drone_3
+      name: pipe_2
       rect:
         serializedVersion: 2
-        x: 48
+        x: 96
         y: 0
-        width: 16
-        height: 16
+        width: 32
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 2b8ce3f4e8a29d44382d30fd24d5548e
-      internalID: -1980927991
+      spriteID: cc3481605962a2c4a906425a48b8f59d
+      internalID: 551324519
       vertices: []
       indices: 
       edges: []
@@ -204,17 +183,16 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 0
+    internalID: 1537655665
     vertices: []
     indices: 
     edges: []
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      drone_1: 1307266997
-      drone_2: 806974234
-      drone_3: -1980927991
-      drone_0: -630375388
+      pipe_2: 551324519
+      pipe_1: 1985610693
+      pipe_0: -963775743
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

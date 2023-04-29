@@ -6,6 +6,11 @@ using UnityEngine;
 [RequireComponent(typeof(PolygonCollider2D))]
 public class Target : MonoBehaviour
 {
+    public enum TargetType {
+        OBSTACLE,
+        PICKUP,
+        DROPOFF
+    };
     TMPro.TMP_Text textMesh;
     string text;
     SpriteRenderer targetRect;
@@ -14,6 +19,7 @@ public class Target : MonoBehaviour
     GameObject targetPrefab;
     GameObject targetVisual;
     bool matched;
+    public TargetType type;
 
     void Start()
     {
@@ -35,7 +41,7 @@ public class Target : MonoBehaviour
         // Get width and height of targetSprite
         targetRect.size = targetCollider.bounds.size;
         targetRect.size = new Vector2(targetRect.size.x, targetRect.size.y);
-        targetRect.transform.position = targetCollider.bounds.center;
+        targetRect.transform.position = targetCollider.bounds.center + Vector3.back * 0.1f;
         // If the position is above center of camera view, move text below
         Vector3 screenPos = Camera.main.WorldToViewportPoint(transform.position);
         if (screenPos.y > 0.5f)

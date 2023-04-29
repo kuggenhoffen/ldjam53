@@ -14,16 +14,19 @@ public class GameManager : MonoBehaviour
     struct LaneState {
         public bool free;
         public bool colliding;
+        public bool pickup;
     };
 
-    const float maxVelocity = 2f;
+    const float maxVelocity = 5f;
+    const float velocityChange = 0.1f;
     const float maxAngle = 20f;
     const float acceleration = 0.5f;
     const int lanes = 4;
     const float laneOffset = 2f;
-    const float freeLaneCheckLength = 5f;
+    const float freeLaneCheckLength = 2.5f;
     const float avoidCheckLength = 2f;
     float velocity = 0f;
+    float targetVelocity = 0f;
 
     [SerializeField]
     GameObject targetPrefab;
@@ -51,6 +54,7 @@ public class GameManager : MonoBehaviour
     
     BoxCollider2D screenCollider;
     int currentLane = 0;
+    bool droneHasPackage = false;
     
     int maxLane {
         get {
@@ -105,7 +109,8 @@ public class GameManager : MonoBehaviour
                 case GameState.LANDED:
                     if (currentInput == "TAKEOFF") {
                         state = GameState.FYING;
-                        SetTargetLane(maxLane);
+                        SetTargetLane(1);
+                        targetVelocity = 2.5f;
                     }
                     break;
                 case GameState.FYING:
@@ -130,12 +135,14 @@ public class GameManager : MonoBehaviour
         switch (state)
         {
             case GameState.FYING:
-                if (velocity < maxVelocity) {
+                if (velocity < targetVelocity && velocity < maxVelocity) {
                     velocity += acceleration * Time.deltaTime;
+                }
+                if (velocity > maxVelocity) {
+                    velocity = maxVelocity;
                 }
                 float verticalVelocityAngleLimit = Mathf.Lerp(maxAngle, 0f, Mathf.Abs(drone.GetComponent<Rigidbody2D>().velocity.y) / 2f);
                 float targetAngle = Mathf.Clamp(Mathf.LerpAngle(0, maxAngle, velocity / maxVelocity), 0f, verticalVelocityAngleLimit);
-                Debug.Log($"verticalLimit {verticalVelocityAngleLimit}, vel.y {drone.GetComponent<Rigidbody2D>().velocity.y}, targetAngle {targetAngle}");
                 
                 drone.transform.eulerAngles = new Vector3(0f, 0f, Mathf.SmoothDampAngle(drone.transform.eulerAngles.z, -targetAngle, ref rotationVelocity, 0.1f));
                 break;
@@ -191,6 +198,7 @@ public class GameManager : MonoBehaviour
             if (target.enabled && !target.IsMatched() && target.word == currentInput)
             {
                 target.SetMatched();
+                targetVelocity += velocityChange;
                 break;
             }
         }
@@ -198,7 +206,6 @@ public class GameManager : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log("Trigger enter: " + other.gameObject.name);
         Target target = other.GetComponent<Target>();
         if (target)
         {
@@ -208,8 +215,9 @@ public class GameManager : MonoBehaviour
 
     void FixedUpdate()
     {
-        bool needAvoid = false;
-        int avoidLane = 0;
+        bool needSwitchLane = false;
+        int avoidLane = -1;
+        int pickupLane = -1;
         for (int i = 0; i < laneStates.Count; i++)
         {
             LaneState laneState = laneStates[i];
@@ -221,10 +229,12 @@ public class GameManager : MonoBehaviour
             if (hit.collider)
             {
                 Target target = hit.collider.GetComponent<Target>();
-                if (target)
+                Debug.Log("Hit: " + hit.collider.gameObject.name + " " + LayerMask.LayerToName(hit.collider.gameObject.layer));
+                laneState.colliding = ((target != null) && (target.type == Target.TargetType.OBSTACLE)) || (LayerMask.LayerToName(hit.collider.gameObject.layer) == "Obstacle");
+                laneState.pickup = (target != null) && (target.type != Target.TargetType.OBSTACLE) && target.IsMatched();
+                if (laneState.colliding)
                 {
-                    laneState.colliding = true;
-                    isAvoidable = target.IsMatched();
+                    isAvoidable = hit.collider.gameObject.layer == LayerMask.NameToLayer("Obstacle") || (target && target.IsMatched());
                 }
             }
 
@@ -233,23 +243,30 @@ public class GameManager : MonoBehaviour
             {
                 laneState.free = false;
             }
-            else
+            else if (avoidLane < 0 || Mathf.Abs(currentLane - i) < Mathf.Abs(currentLane - avoidLane))
             {
                 avoidLane = i;
             }
 
             laneStates[i] = laneState;
 
-            if (i == currentLane && laneState.colliding && isAvoidable)
+            if (laneState.pickup)
             {
-                needAvoid = true;
+                pickupLane = i;
+                needSwitchLane = true;
+            }
+            else if (i == currentLane && laneState.colliding && isAvoidable)
+            {
+                needSwitchLane = true;
             }
         }
 
-        if (needAvoid)
+        if (needSwitchLane)
         {
-            SetTargetLane(avoidLane);
+            Debug.Log($"Need switch, {pickupLane}, {avoidLane}");
+            SetTargetLane(pickupLane >= 0 ? pickupLane : avoidLane);
         }
+
     }
 
     void OnDrawGizmos()
@@ -267,12 +284,17 @@ public class GameManager : MonoBehaviour
             if (laneState.colliding) {
                 Gizmos.color = Color.red;
             }
+            else if (laneState.pickup) {
+                Gizmos.color = Color.yellow;
+            }
             Gizmos.DrawRay(GetLanePosition(i) + Vector3.up * 0.05f, Vector2.right * avoidCheckLength);
             Gizmos.color = Color.red;
             if (laneState.free) {
                 Gizmos.color = Color.green;
             }
             Gizmos.DrawRay(GetLanePosition(i) - Vector3.up * 0.05f, Vector2.right * freeLaneCheckLength);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawRay(GetLanePosition(i), Vector2.right * 1000f);
         }
     }
 
@@ -283,7 +305,26 @@ public class GameManager : MonoBehaviour
 
     void SetTargetLane(int lane)
     {
+        Debug.Log($"Set target lane {lane}");
         currentLane = lane;
         droneLane.position = laneBasePosition.position + Vector3.up * lane * laneOffset;
+    }
+
+    public bool Pickup(PickupController pickupController, Target.TargetType type)
+    {
+        bool retval = false;
+        Debug.Log($"Pickup {droneHasPackage} {type} {pickupController.hasPackage}");
+        if (droneHasPackage && type == Target.TargetType.DROPOFF && !pickupController.hasPackage)
+        {
+            droneHasPackage = false;
+            retval = true;
+        }
+        else if (!droneHasPackage && type == Target.TargetType.PICKUP && pickupController.hasPackage)
+        {
+            droneHasPackage = true;
+            retval = true;
+        }
+        drone.hasPackage = droneHasPackage;
+        return retval;
     }
 }

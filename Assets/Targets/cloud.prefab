@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetPrefab: {fileID: 8353193762023924242, guid: 3b85ba438555e8948970de8e540832b6, type: 3}
+  type: 0
 --- !u!212 &4398020030093756399
 SpriteRenderer:
   m_ObjectHideFlags: 0
