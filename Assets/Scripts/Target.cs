@@ -15,10 +15,17 @@ public class Target : MonoBehaviour
     GameObject targetVisual;
     bool matched;
 
-    // Start is called before the first frame update
     void Start()
     {
-        targetVisual = Instantiate(targetPrefab, transform);
+    }
+
+    // Start is called before the first frame update
+    void OnEnable()
+    {
+        if (targetVisual == null)
+        {
+            targetVisual = Instantiate(targetPrefab, transform);
+        }
         textMesh = targetVisual.GetComponentInChildren<TMPro.TMP_Text>();
         textMesh.color = Color.red;
         targetRect = targetVisual.GetComponent<SpriteRenderer>();
@@ -28,6 +35,7 @@ public class Target : MonoBehaviour
         // Get width and height of targetSprite
         targetRect.size = targetCollider.bounds.size;
         targetRect.size = new Vector2(targetRect.size.x, targetRect.size.y);
+        targetRect.transform.position = targetCollider.bounds.center;
         // If the position is above center of camera view, move text below
         Vector3 screenPos = Camera.main.WorldToViewportPoint(transform.position);
         if (screenPos.y > 0.5f)
