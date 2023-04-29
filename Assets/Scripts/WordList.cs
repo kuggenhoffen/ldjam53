@@ -106,10 +106,10 @@ public class WordList
         evidence
         idea";
 
-    static string getWord()
+    static public string getWord()
     {
         string[] words = wordList.Split('\n');
-        return words[Random.Range(0, words.Length)];
+        return words[Random.Range(0, words.Length)].ToUpper().Trim();
     }
 
 }
