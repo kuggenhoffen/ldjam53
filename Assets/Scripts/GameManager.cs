@@ -1,14 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(BoxCollider2D))]
 public class GameManager : MonoBehaviour
 {
     
     enum GameState {
-        LANDED,
-        FYING
+        START,
+        FYING,
+        FINISH,
+        GAMEOVER,
+        SCORE
     };
 
     struct LaneState {
@@ -21,12 +25,16 @@ public class GameManager : MonoBehaviour
     const float velocityChange = 0.1f;
     const float maxAngle = 20f;
     const float acceleration = 0.5f;
+    const float endAcceleration = 2f;
     const int lanes = 4;
     const float laneOffset = 2f;
     const float freeLaneCheckLength = 2.5f;
     const float avoidCheckLength = 2f;
+    const float maxEndVelocity = 10f;
+    const float droneLaneSpeed = 10f;
     float velocity = 0f;
     float targetVelocity = 0f;
+    float endVelocity = 0f;
 
     [SerializeField]
     GameObject targetPrefab;
@@ -40,6 +48,13 @@ public class GameManager : MonoBehaviour
     Transform laneBasePosition;
     [SerializeField]
     Transform droneLane;
+    [SerializeField]
+    UIEndPanel uiEndPanel;
+    [SerializeField]
+    GameObject uiGame;
+    [SerializeField]
+    Slider healthSlider;
+
     string currentInput;
     
     Camera cam;
@@ -50,7 +65,7 @@ public class GameManager : MonoBehaviour
     const float inputIndicateTime = 1f;
     float nextInputIndicateClear = 0f;
 
-    GameState state = GameState.LANDED;
+    GameState state = GameState.START;
     
     BoxCollider2D screenCollider;
     int currentLane = 0;
@@ -61,6 +76,9 @@ public class GameManager : MonoBehaviour
             return lanes - 1;
         }
     }
+
+    int score;
+    float health;
 
     List<LaneState> laneStates = new List<LaneState>(lanes);
     float rotationVelocity = 0f;
@@ -86,18 +104,12 @@ public class GameManager : MonoBehaviour
         // Resize screenCollider to fit camera view
         screenCollider = GetComponent<BoxCollider2D>();
         screenCollider.size = new Vector2(cam.orthographicSize * cam.aspect * 2, cam.orthographicSize * 2);
-        SetTargetLane(0);
-        for (int i = 0; i < lanes; i++)
-        {
-            laneStates.Add(new LaneState());
-        }
+        SetState(GameState.START);
     }
 
     // Update is called once per frame
     void Update()
     {
-        stage.transform.Translate(Vector3.left * velocity * Time.deltaTime);
-
         if (Input.GetKeyDown(KeyCode.Backspace))
         {
             RemoveInput();
@@ -106,11 +118,9 @@ public class GameManager : MonoBehaviour
         {
             switch(state)
             {
-                case GameState.LANDED:
+                case GameState.START:
                     if (currentInput == "TAKEOFF") {
-                        state = GameState.FYING;
-                        SetTargetLane(1);
-                        targetVelocity = 2.5f;
+                        SetState(GameState.FYING);
                     }
                     break;
                 case GameState.FYING:
@@ -132,9 +142,12 @@ public class GameManager : MonoBehaviour
             currentInputTextMesh.text = currentInput;
         }
 
+        healthSlider.value = health;
+
         switch (state)
         {
             case GameState.FYING:
+                stage.transform.Translate(Vector3.left * velocity * Time.deltaTime);
                 if (velocity < targetVelocity && velocity < maxVelocity) {
                     velocity += acceleration * Time.deltaTime;
                 }
@@ -145,6 +158,21 @@ public class GameManager : MonoBehaviour
                 float targetAngle = Mathf.Clamp(Mathf.LerpAngle(0, maxAngle, velocity / maxVelocity), 0f, verticalVelocityAngleLimit);
                 
                 drone.transform.eulerAngles = new Vector3(0f, 0f, Mathf.SmoothDampAngle(drone.transform.eulerAngles.z, -targetAngle, ref rotationVelocity, 0.1f));
+
+                Vector3 droneLaneTarget = laneBasePosition.position + Vector3.up * currentLane * laneOffset;
+                if (droneLane.position != droneLaneTarget) {
+                    droneLane.position = Vector3.MoveTowards(droneLane.position, droneLaneTarget, droneLaneSpeed * Time.deltaTime);
+                }
+                break;
+            case GameState.FINISH:
+                stage.transform.Translate(Vector3.left * velocity * Time.deltaTime);
+                if (health > 0f) {
+                    endVelocity += endAcceleration * Time.deltaTime;
+                    if (endVelocity > maxEndVelocity) {
+                        endVelocity = maxEndVelocity;
+                    }
+                    droneLane.transform.Translate(Vector3.right * endVelocity * Time.deltaTime);
+                }
                 break;
         }
     }
@@ -197,6 +225,7 @@ public class GameManager : MonoBehaviour
             Debug.Log($"Comparing {currentInput} to {target.word}");
             if (target.enabled && !target.IsMatched() && target.word == currentInput)
             {
+                score += target.word.Length * 6;
                 target.SetMatched();
                 targetVelocity += velocityChange;
                 break;
@@ -215,6 +244,11 @@ public class GameManager : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (state != GameState.FYING)
+        {
+            return;
+        }
+
         bool needSwitchLane = false;
         int avoidLane = -1;
         int pickupLane = -1;
@@ -307,7 +341,6 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log($"Set target lane {lane}");
         currentLane = lane;
-        droneLane.position = laneBasePosition.position + Vector3.up * lane * laneOffset;
     }
 
     public bool Pickup(PickupController pickupController, Target.TargetType type)
@@ -318,6 +351,7 @@ public class GameManager : MonoBehaviour
         {
             droneHasPackage = false;
             retval = true;
+            score += 100;
         }
         else if (!droneHasPackage && type == Target.TargetType.PICKUP && pickupController.hasPackage)
         {
@@ -326,5 +360,83 @@ public class GameManager : MonoBehaviour
         }
         drone.hasPackage = droneHasPackage;
         return retval;
+    }
+
+    public float GetPosition()
+    {
+        return stage.transform.position.x;
+    }
+
+    public void EndStage()
+    {
+        SetState(GameState.FINISH);
+    }
+
+    void SetState(GameState newState)
+    {
+        switch (newState)
+        {
+            case GameState.START:
+                health = 100f;
+                SetTargetLane(0);
+                for (int i = 0; i < lanes; i++)
+                {
+                    laneStates.Add(new LaneState());
+                }
+                score = 0;
+                drone.SetKinematic(true);
+                uiEndPanel.Hide();
+                uiGame.SetActive(true);
+                droneLane.position = drone.transform.position;
+                break;
+            case GameState.FYING:
+                SetTargetLane(1);
+                targetVelocity = 2.5f;
+                drone.SetKinematic(false);
+                break;
+            case GameState.FINISH:
+                if (health <= 0f) {
+                    // Explode
+                    drone.gameObject.SetActive(false);
+                }
+                StartCoroutine(EndStageCoroutine());
+                break;
+            case GameState.GAMEOVER:
+                uiEndPanel.Show(score);
+                uiGame.SetActive(false);
+                break;
+            case GameState.SCORE:
+                uiEndPanel.Show(score);
+                uiGame.SetActive(false);
+                break;
+        }
+        state = newState;
+    }
+
+    IEnumerator EndStageCoroutine()
+    {
+        float elapsed = 0;
+        const float endDuration = 5f;
+        while (elapsed < endDuration)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        SetState(GameState.SCORE);
+    }
+
+    public void Collision()
+    {
+        if (state != GameState.FYING)
+        {
+            return;
+        }
+
+        health -= 5f;
+        if (health <= 0f)
+        {
+            SetState(GameState.FINISH);
+        }
+        drone.Nudge();
     }
 }

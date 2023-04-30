@@ -6,6 +6,8 @@ using UnityEngine;
 [RequireComponent(typeof(PolygonCollider2D))]
 public class Target : MonoBehaviour
 {
+    const float COLLISION_DELAY = 0.5f;
+
     public enum TargetType {
         OBSTACLE,
         PICKUP,
@@ -21,8 +23,12 @@ public class Target : MonoBehaviour
     bool matched;
     public TargetType type;
 
+    GameManager gameManager;
+    float lastCollisionTime = 0f;
+
     void Start()
     {
+        gameManager = FindObjectOfType<GameManager>();
     }
 
     // Start is called before the first frame update
@@ -84,4 +90,28 @@ public class Target : MonoBehaviour
     {
         return matched;
     }
+
+    void CheckCollision(Collider2D collider)
+    {
+        if (Time.time > lastCollisionTime + COLLISION_DELAY)
+        {
+            if (collider.gameObject.tag == "Player" && type == TargetType.OBSTACLE && !matched)
+            {
+                lastCollisionTime = Time.time;
+                gameManager.Collision();
+            }
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D collider)
+    {
+        CheckCollision(collider);
+    }
+
+    void OnTriggerStay2D(Collider2D collider)
+    {
+        CheckCollision(collider);
+    }
+
+
 }
