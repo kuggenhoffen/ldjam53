@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
+[RequireComponent(typeof(AudioClipPlayer))]
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(PolygonCollider2D))]
 public class Target : MonoBehaviour
@@ -9,11 +11,21 @@ public class Target : MonoBehaviour
     const float COLLISION_DELAY = 0.5f;
 
     public enum TargetType {
+        NONE,
         OBSTACLE,
         PICKUP,
         DROPOFF
     };
+
+    public enum ForcedTargetType {
+        NONE,
+        TAKEOFF,
+        TUTORIAL1,
+        TUTORIAL2,
+        TUTORIAL3
+    };
     TMPro.TMP_Text textMesh;
+    [SerializeField]
     string text;
     SpriteRenderer targetRect;
     PolygonCollider2D targetCollider;
@@ -22,18 +34,22 @@ public class Target : MonoBehaviour
     GameObject targetVisual;
     bool matched;
     public TargetType type;
+    public ForcedTargetType forcedType;
 
     GameManager gameManager;
     float lastCollisionTime = 0f;
+    AudioClipPlayer audioClipPlayer;
 
     void Start()
     {
         gameManager = FindObjectOfType<GameManager>();
+        audioClipPlayer = GetComponent<AudioClipPlayer>();
     }
 
     // Start is called before the first frame update
     void OnEnable()
     {
+        SceneManager.sceneLoaded += OnSceneLoeaded;
         if (targetVisual == null)
         {
             targetVisual = Instantiate(targetPrefab, transform);
@@ -61,6 +77,16 @@ public class Target : MonoBehaviour
 
     }
 
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoeaded;
+    }
+
+    void OnSceneLoeaded(Scene scene, LoadSceneMode mode)
+    {
+        gameManager = FindObjectOfType<GameManager>();
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -84,6 +110,8 @@ public class Target : MonoBehaviour
         matched = true;
         textMesh.color = Color.green;
         targetRect.color = Color.green;
+        audioClipPlayer.PlayAudioClip();
+
     }
 
     public bool IsMatched()

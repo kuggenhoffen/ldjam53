@@ -1,15 +1,21 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(AudioSource))]
+[RequireComponent(typeof(AudioClipPlayer))]
 [RequireComponent(typeof(BoxCollider2D))]
 public class GameManager : MonoBehaviour
 {
     
     enum GameState {
+        WAITING,
         START,
-        FYING,
+        FLYING,
+        TUTORIAL,
         FINISH,
         GAMEOVER,
         SCORE
@@ -19,6 +25,7 @@ public class GameManager : MonoBehaviour
         public bool free;
         public bool colliding;
         public bool pickup;
+        public bool forced;
     };
 
     const float maxVelocity = 5f;
@@ -28,10 +35,12 @@ public class GameManager : MonoBehaviour
     const float endAcceleration = 2f;
     const int lanes = 4;
     const float laneOffset = 2f;
+    const float forcedLaneCheckLength = 4f;
     const float freeLaneCheckLength = 2.5f;
     const float avoidCheckLength = 2f;
     const float maxEndVelocity = 10f;
     const float droneLaneSpeed = 10f;
+    const float maxDroneVolume = 0.3f;
     float velocity = 0f;
     float targetVelocity = 0f;
     float endVelocity = 0f;
@@ -54,6 +63,8 @@ public class GameManager : MonoBehaviour
     GameObject uiGame;
     [SerializeField]
     Slider healthSlider;
+    [SerializeField]
+    GameObject explosionPrefab;
 
     string currentInput;
     
@@ -82,10 +93,14 @@ public class GameManager : MonoBehaviour
 
     List<LaneState> laneStates = new List<LaneState>(lanes);
     float rotationVelocity = 0f;
+    AudioClipPlayer audioClipPlayer;
+    AudioSource droneAudioSource;
 
     // Start is called before the first frame update
     void Start()
     {
+        droneAudioSource = GetComponent<AudioSource>();
+        audioClipPlayer = GetComponent<AudioClipPlayer>();
         currentInputTextMesh.fontSize = inputTextSize;
         cam = Camera.main;
         targets = FindObjectsOfType<Target>();
@@ -93,23 +108,40 @@ public class GameManager : MonoBehaviour
         List<string> usedWords = new List<string>();
         foreach (Target target in targets)
         {
+            target.enabled = false;
+            if (target.forcedType != Target.ForcedTargetType.NONE) {
+                continue;
+            }
             string newWord = null;
             do {
                 newWord = GetNewWord();
             } while (usedWords.Contains(newWord));
             target.word = newWord;
-            target.enabled = false;
         }
 
-        // Resize screenCollider to fit camera view
         screenCollider = GetComponent<BoxCollider2D>();
-        screenCollider.size = new Vector2(cam.orthographicSize * cam.aspect * 2, cam.orthographicSize * 2);
-        SetState(GameState.START);
+        SetState(GameState.WAITING);
+        stage = GameObject.Find("Stage");
+        droneAudioSource.volume = 0f;
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Escape) && state != GameState.GAMEOVER)
+        {
+            SetState(GameState.GAMEOVER);
+            return;
+        }
+
+        if (state == GameState.WAITING) {
+            return;
+        }
+        
+        // Resize screenCollider to fit camera view
+        cam = Camera.main;
+        screenCollider.size = new Vector2(cam.orthographicSize * cam.aspect * 2, cam.orthographicSize * 2);
+
         if (Input.GetKeyDown(KeyCode.Backspace))
         {
             RemoveInput();
@@ -119,11 +151,8 @@ public class GameManager : MonoBehaviour
             switch(state)
             {
                 case GameState.START:
-                    if (currentInput == "TAKEOFF") {
-                        SetState(GameState.FYING);
-                    }
-                    break;
-                case GameState.FYING:
+                case GameState.FLYING:
+                case GameState.TUTORIAL:
                     CheckTargets();
                     break;
             }
@@ -146,7 +175,13 @@ public class GameManager : MonoBehaviour
 
         switch (state)
         {
-            case GameState.FYING:
+            case GameState.FLYING:
+                foreach (LaneState laneState in laneStates) {
+                    if (laneState.forced) {
+                        SetState(GameState.TUTORIAL);
+                        break;
+                    }
+                }
                 stage.transform.Translate(Vector3.left * velocity * Time.deltaTime);
                 if (velocity < targetVelocity && velocity < maxVelocity) {
                     velocity += acceleration * Time.deltaTime;
@@ -174,7 +209,24 @@ public class GameManager : MonoBehaviour
                     droneLane.transform.Translate(Vector3.right * endVelocity * Time.deltaTime);
                 }
                 break;
+            case GameState.TUTORIAL:
+                bool forced = false;
+                foreach (LaneState laneState in laneStates) {
+                    if (laneState.forced) {
+                        forced = true;
+                        break;
+                    }
+                }
+                if (!forced) {
+                    SetState(GameState.FLYING);
+                }
+                break;
+
         }
+
+        float horPitch = Mathf.Lerp(0.8f, 1.1f, Mathf.InverseLerp(0f, maxVelocity, velocity));
+        float verPitch = Mathf.Lerp(0.8f, 1.2f, Mathf.InverseLerp(-2f, 2f, drone.GetComponent<Rigidbody2D>().velocity.y));
+        droneAudioSource.pitch = horPitch * verPitch;
     }
 
     string GetNewWord()
@@ -200,6 +252,7 @@ public class GameManager : MonoBehaviour
         string formattedText = currentInput.Substring(0, currentInput.Length - 1) + $"<size={inputTextMaxSize}>{currentInput[currentInput.Length - 1]}</size>";
         currentInputTextMesh.text = formattedText;
         nextInputIndicateClear = Time.time + inputIndicateTime;
+        audioClipPlayer.PlayAudioClip();
     }
 
     void RemoveInput()
@@ -208,6 +261,7 @@ public class GameManager : MonoBehaviour
         {
             currentInput = currentInput.Substring(0, currentInput.Length - 1);
             currentInputTextMesh.text = currentInput;
+            audioClipPlayer.PlayAudioClip();
         }
     }
 
@@ -219,16 +273,23 @@ public class GameManager : MonoBehaviour
 
     void CheckTargets()
     {
-        Debug.Log("Check input: " + currentInput);
         foreach (Target target in targets)
         {
-            Debug.Log($"Comparing {currentInput} to {target.word}");
-            if (target.enabled && !target.IsMatched() && target.word == currentInput)
-            {
-                score += target.word.Length * 6;
-                target.SetMatched();
-                targetVelocity += velocityChange;
-                break;
+            if (target.enabled) {
+                Debug.Log($"Comparing {currentInput} to {target.word}");
+                if (!target.IsMatched() && target.word == currentInput)
+                {
+                    score += target.word.Length * 6;
+                    target.SetMatched();
+                    targetVelocity += velocityChange;
+                    if (target.forcedType == Target.ForcedTargetType.TAKEOFF) {
+                        SetState(GameState.FLYING);
+                    }
+                    else if (target.forcedType != Target.ForcedTargetType.NONE && state == GameState.TUTORIAL) {
+                        SetState(GameState.FLYING);
+                    }
+                    break;
+                }
             }
         }
     }
@@ -244,7 +305,7 @@ public class GameManager : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (state != GameState.FYING)
+        if (state != GameState.FLYING)
         {
             return;
         }
@@ -257,13 +318,13 @@ public class GameManager : MonoBehaviour
             LaneState laneState = laneStates[i];
             laneState.colliding = false;
             laneState.free = true;
+            laneState.forced = false;
             bool isAvoidable = false;
 
             RaycastHit2D hit = Physics2D.Raycast(GetLanePosition(i), Vector2.right, avoidCheckLength, ~LayerMask.GetMask("Ignore Raycast"));
             if (hit.collider)
             {
                 Target target = hit.collider.GetComponent<Target>();
-                Debug.Log("Hit: " + hit.collider.gameObject.name + " " + LayerMask.LayerToName(hit.collider.gameObject.layer));
                 laneState.colliding = ((target != null) && (target.type == Target.TargetType.OBSTACLE)) || (LayerMask.LayerToName(hit.collider.gameObject.layer) == "Obstacle");
                 laneState.pickup = (target != null) && (target.type != Target.TargetType.OBSTACLE) && target.IsMatched();
                 if (laneState.colliding)
@@ -280,6 +341,13 @@ public class GameManager : MonoBehaviour
             else if (avoidLane < 0 || Mathf.Abs(currentLane - i) < Mathf.Abs(currentLane - avoidLane))
             {
                 avoidLane = i;
+            }
+
+            RaycastHit2D forcedHit = Physics2D.Raycast(GetLanePosition(i), Vector2.right, forcedLaneCheckLength, ~LayerMask.GetMask("Ignore Raycast"));
+            if (forcedHit.collider)
+            {
+                Target target = forcedHit.collider.GetComponent<Target>();
+                laneState.forced = (target != null) && !target.IsMatched() && (target.forcedType != Target.ForcedTargetType.NONE);
             }
 
             laneStates[i] = laneState;
@@ -339,8 +407,10 @@ public class GameManager : MonoBehaviour
 
     void SetTargetLane(int lane)
     {
-        Debug.Log($"Set target lane {lane}");
-        currentLane = lane;
+        if (lane >= 0 && lane < lanes) {
+            Debug.Log($"Set target lane {lane}");
+            currentLane = lane;
+        }
     }
 
     public bool Pickup(PickupController pickupController, Target.TargetType type)
@@ -364,6 +434,9 @@ public class GameManager : MonoBehaviour
 
     public float GetPosition()
     {
+        if (stage == null) {
+            stage = GameObject.Find("Stage");
+        }
         return stage.transform.position.x;
     }
 
@@ -372,62 +445,134 @@ public class GameManager : MonoBehaviour
         SetState(GameState.FINISH);
     }
 
+    int GetStageNumber()
+    {        
+        string currentName = SceneManager.GetActiveScene().name;
+        Debug.Log("current scene name: " + currentName);
+        int currentStage = 999;
+        try {
+            currentStage = int.Parse(currentName.Substring(5));
+        }
+        catch (Exception e) { };
+        return currentStage;
+    }
+
+    int GetNextStageNumber()
+    {
+        return GetStageNumber() + 1;
+    }
+
+    static string BuildStagePath(int stageNumber)
+    {
+        return $"Assets/Scenes/Stage{stageNumber}.unity";
+    }
+
+    bool IsLastStage()
+    {
+        return SceneUtility.GetBuildIndexByScenePath(BuildStagePath(GetNextStageNumber())) == -1;
+    }
+
     void SetState(GameState newState)
     {
+        int showScore;
         switch (newState)
         {
+            case GameState.WAITING:
+                uiGame.SetActive(false);
+                uiEndPanel.Show(0, GetStageNumber(), UIEndPanel.ViewType.STAGE_START); 
+                drone.SetKinematic(true);           
+                break;
             case GameState.START:
-                health = 100f;
+                StartCoroutine(StartStageCoroutine(1f));
+                health = PlayerPrefs.GetFloat("Health", 100f);
                 SetTargetLane(0);
                 for (int i = 0; i < lanes; i++)
                 {
                     laneStates.Add(new LaneState());
                 }
                 score = 0;
-                drone.SetKinematic(true);
                 uiEndPanel.Hide();
                 uiGame.SetActive(true);
                 droneLane.position = drone.transform.position;
                 break;
-            case GameState.FYING:
-                SetTargetLane(1);
-                targetVelocity = 2.5f;
-                drone.SetKinematic(false);
+            case GameState.FLYING:
+                if (state != GameState.FLYING && state != GameState.TUTORIAL) {
+                    SetTargetLane(1);
+                    targetVelocity = 2.5f;
+                    drone.SetKinematic(false);
+                }
+                else if (state == GameState.TUTORIAL) {
+                    for (int i = 0; i < lanes; i++)
+                    {
+                        if (laneStates[i].forced) {
+                            LaneState laneState = laneStates[i];
+                            laneState.forced = false;
+                            laneStates[i] = laneState;
+                        }
+                    }
+                }
                 break;
             case GameState.FINISH:
+                GameState nextState = GameState.SCORE;
+                float duration = 5f;
                 if (health <= 0f) {
                     // Explode
                     drone.gameObject.SetActive(false);
+                    Instantiate(explosionPrefab, drone.transform.position, Quaternion.identity);
+                    nextState = GameState.GAMEOVER;
+                    duration = 2f;
+                    droneAudioSource.Stop();
                 }
-                StartCoroutine(EndStageCoroutine());
+                StartCoroutine(EndStageCoroutine(duration, nextState));
                 break;
             case GameState.GAMEOVER:
-                uiEndPanel.Show(score);
+                showScore = score;
+                showScore += PlayerPrefs.GetInt("Score", 0);
+                PlayerPrefs.SetInt("Score", showScore);
+                uiEndPanel.Show(PlayerPrefs.GetInt("Score", 0), GetStageNumber(), UIEndPanel.ViewType.GAME_OVER);
                 uiGame.SetActive(false);
                 break;
             case GameState.SCORE:
-                uiEndPanel.Show(score);
+                PlayerPrefs.SetFloat("Health", health);
+                showScore = score;
+                PlayerPrefs.SetInt("Score", showScore + PlayerPrefs.GetInt("Score", 0));
+                if (IsLastStage()) {
+                    showScore = PlayerPrefs.GetInt("Score", 0);
+                }
+                uiEndPanel.Show(showScore, GetStageNumber(), IsLastStage() ? UIEndPanel.ViewType.GAME_COMPLETE : UIEndPanel.ViewType.STAGE_COMPLETE);
                 uiGame.SetActive(false);
                 break;
         }
+        Debug.Log($"Change state {state} -> {newState}");
         state = newState;
     }
 
-    IEnumerator EndStageCoroutine()
+    IEnumerator EndStageCoroutine(float duration, GameState nextState)
     {
         float elapsed = 0;
-        const float endDuration = 5f;
-        while (elapsed < endDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
+            droneAudioSource.volume = maxDroneVolume - elapsed / duration * maxDroneVolume;
             yield return null;
         }
-        SetState(GameState.SCORE);
+        SetState(nextState);
+    }
+
+    IEnumerator StartStageCoroutine(float duration)
+    {
+        float elapsed = 0;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            droneAudioSource.volume = elapsed / duration * maxDroneVolume;
+            yield return null;
+        }
     }
 
     public void Collision()
     {
-        if (state != GameState.FYING)
+        if (state != GameState.FLYING)
         {
             return;
         }
@@ -437,6 +582,32 @@ public class GameManager : MonoBehaviour
         {
             SetState(GameState.FINISH);
         }
-        drone.Nudge();
+        else {
+            drone.Nudge();
+        }
+    }
+
+    public void OnStartAnimationEnd()
+    {
+        SetState(GameState.START);
+    }
+
+    public void OnEndButtonClick()
+    {
+        switch (state) {
+            case GameState.GAMEOVER:
+                SceneManager.LoadScene("TitleScene");
+                break;
+            case GameState.SCORE:
+                if (IsLastStage())
+                {
+                    SceneManager.LoadScene("TitleScene");
+                }
+                else
+                {
+                    SceneManager.LoadScene($"Stage{GetNextStageNumber()}");
+                }
+                break;
+        }
     }
 }

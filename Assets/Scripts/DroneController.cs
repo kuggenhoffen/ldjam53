@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(Animator))]
 public class DroneController : MonoBehaviour
 {
@@ -9,12 +10,16 @@ public class DroneController : MonoBehaviour
 
     public bool hasPackage;
     Animator animator;
+    AudioSource audioSource;
+    [SerializeField]
+    AudioClip[] audioClipsHurt;
 
     // Start is called before the first frame update
     void Start()
     {
         hasPackage = false;
         animator = GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -35,5 +40,9 @@ public class DroneController : MonoBehaviour
         // Add random force to random direction on the left side of the screen
         Vector3 direction = new Vector3(-1, Random.Range(-1f, 1f), 0);
         GetComponent<Rigidbody2D>().AddForce(direction.normalized * nudgeForce, ForceMode2D.Impulse);
+        animator.SetTrigger("damage");
+        if (audioClipsHurt.Length > 0) {
+            audioSource.PlayOneShot(audioClipsHurt[Random.Range(0, audioClipsHurt.Length)]);
+        }
     }
 }
