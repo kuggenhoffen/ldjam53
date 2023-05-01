@@ -95,6 +95,7 @@ public class GameManager : MonoBehaviour
     float rotationVelocity = 0f;
     AudioClipPlayer audioClipPlayer;
     AudioSource droneAudioSource;
+    PersistentData persistentData;
 
     // Start is called before the first frame update
     void Start()
@@ -122,6 +123,7 @@ public class GameManager : MonoBehaviour
         screenCollider = GetComponent<BoxCollider2D>();
         SetState(GameState.WAITING);
         stage = GameObject.Find("Stage");
+        persistentData = FindObjectOfType<PersistentData>();
         droneAudioSource.volume = 0f;
     }
 
@@ -484,7 +486,7 @@ public class GameManager : MonoBehaviour
                 break;
             case GameState.START:
                 StartCoroutine(StartStageCoroutine(1f));
-                health = PlayerPrefs.GetFloat("Health", 100f);
+                health = persistentData.health;
                 SetTargetLane(0);
                 for (int i = 0; i < lanes; i++)
                 {
@@ -521,23 +523,21 @@ public class GameManager : MonoBehaviour
                     Instantiate(explosionPrefab, drone.transform.position, Quaternion.identity);
                     nextState = GameState.GAMEOVER;
                     duration = 2f;
-                    droneAudioSource.Stop();
                 }
+                droneAudioSource.Stop();
                 StartCoroutine(EndStageCoroutine(duration, nextState));
                 break;
             case GameState.GAMEOVER:
-                showScore = score;
-                showScore += PlayerPrefs.GetInt("Score", 0);
-                PlayerPrefs.SetInt("Score", showScore);
-                uiEndPanel.Show(PlayerPrefs.GetInt("Score", 0), GetStageNumber(), UIEndPanel.ViewType.GAME_OVER);
+                persistentData.score += score;
+                uiEndPanel.Show(persistentData.score, GetStageNumber(), UIEndPanel.ViewType.GAME_OVER);
                 uiGame.SetActive(false);
                 break;
             case GameState.SCORE:
-                PlayerPrefs.SetFloat("Health", health);
+                persistentData.health = health;
                 showScore = score;
-                PlayerPrefs.SetInt("Score", showScore + PlayerPrefs.GetInt("Score", 0));
+                persistentData.score += score;
                 if (IsLastStage()) {
-                    showScore = PlayerPrefs.GetInt("Score", 0);
+                    showScore = persistentData.score;
                 }
                 uiEndPanel.Show(showScore, GetStageNumber(), IsLastStage() ? UIEndPanel.ViewType.GAME_COMPLETE : UIEndPanel.ViewType.STAGE_COMPLETE);
                 uiGame.SetActive(false);

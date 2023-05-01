@@ -5,10 +5,12 @@ using UnityEngine.SceneManagement;
 
 public class TitleManager : MonoBehaviour
 {
+    PersistentData persistentData;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        persistentData = FindObjectOfType<PersistentData>();
     }
 
     // Update is called once per frame
@@ -19,8 +21,8 @@ public class TitleManager : MonoBehaviour
 
     public void OnStartBtnClick()
     {
-        PlayerPrefs.SetInt("Score", 0);
-        PlayerPrefs.SetFloat("Health", 100f);
+        persistentData.score = 0;
+        persistentData.health = 100f;
         SceneManager.LoadScene("Stage1");
     }
 
