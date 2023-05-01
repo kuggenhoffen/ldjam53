@@ -523,14 +523,15 @@ public class GameManager : MonoBehaviour
                     Instantiate(explosionPrefab, drone.transform.position, Quaternion.identity);
                     nextState = GameState.GAMEOVER;
                     duration = 2f;
+                    droneAudioSource.Stop();
                 }
-                droneAudioSource.Stop();
                 StartCoroutine(EndStageCoroutine(duration, nextState));
                 break;
             case GameState.GAMEOVER:
                 persistentData.score += score;
                 uiEndPanel.Show(persistentData.score, GetStageNumber(), UIEndPanel.ViewType.GAME_OVER);
                 uiGame.SetActive(false);
+                droneAudioSource.Stop();
                 break;
             case GameState.SCORE:
                 persistentData.health = health;
