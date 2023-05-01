@@ -130,13 +130,13 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape) && state != GameState.GAMEOVER)
-        {
-            SetState(GameState.GAMEOVER);
+        if (state == GameState.WAITING) {
             return;
         }
 
-        if (state == GameState.WAITING) {
+        if (Input.GetKeyDown(KeyCode.Escape) && state != GameState.GAMEOVER)
+        {
+            SetState(GameState.GAMEOVER);
             return;
         }
         
